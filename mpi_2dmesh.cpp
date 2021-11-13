@@ -390,7 +390,7 @@ sendStridedBuffer(float *srcBuf,
    int subDims[2] = {sendWidth, sendHeight}; // dims of subArray
    int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
    int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
-   int s_offset = srcOffsetRow * srcWidth + srcOffsetColumn;
+   int s_offset[2] = {srcOffsetRow, srcOffsetColumn};
 
    MPI_Datatype send;
    MPI_Type_create_subarray(ndims, baseDims, subDims, s_offset, MPI_ORDER_C, MPI_FLOAT, &send);
@@ -423,9 +423,9 @@ recvStridedBuffer(float *dstBuf,
    int expectedSize[2] = {expectedWidth, expectedHeight}; // dims of subArray
    int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
    int rcount;
-   int d_offset = dstOffsetRow * dstWidth + dstOffsetColumn;
+   int d_offset[2] = {dstOffsetRow, dstOffsetColumn};
 
-   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_INT, &stat);
+   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &stat);
    MPI_Type_commit(&stat);
 	
 	MPI_Recv(dstBuf, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
