@@ -405,6 +405,7 @@ sendStridedBuffer(float *srcBuf,
 	int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
 	
 	MPI_Send(srcBuf + srcOffset, 1, send, toRank, msgTag, MPI_COMM_WORLD);
+   MPI_Type_free(&send);
       
 }
 
