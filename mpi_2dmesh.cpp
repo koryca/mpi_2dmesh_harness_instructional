@@ -386,20 +386,19 @@ sendStridedBuffer(float *srcBuf,
    // sendWidth by sendHeight values, and the subregion is offset from the origin of
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
-   int baseDims[2] = {srcHeight, srcWidth}; // dims of baseArray: 3 rows, 4 columns 
-   int subDims[2] = {sendHeight, sendWidth}; // dims of subArray: 2 rows, 3 columns
-   int baseArray[baseDims[0]*baseDims[1]]; // baseArray can be a 1D int array
-   int subOffset[2] = {srcOffsetRow, srcOffsetColumn}; // subarray will be offset 1 row, 1 column in baseArray
+   int baseDims[2] = {srcHeight, srcWidth}; // dims of baseArray
+   int subDims[2] = {sendHeight, sendWidth}; // dims of subArray
+   int subOffset[2] = {srcOffsetRow, srcOffsetColumn}; // subarray will be offset srcOffsetRow row, srcOffsetColumn column in baseArray
    
-      MPI_Datatype mysubarray;  // create the mysubarray object and initialize it
-      MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &mysubarray);
-      MPI_Type_commit(&mysubarray);
+      MPI_Datatype send_subarray;  // create the mysubarray object and initialize it
+      MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
+      MPI_Type_commit(&send_subarray);
 
-      MPI_Send(baseArray, 1, mysubarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
+      MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
       // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
 
-      MPI_Type_free(&mysubarray);
+      MPI_Type_free(&send_subarray);
       
 }
 
@@ -424,15 +423,23 @@ recvStridedBuffer(float *dstBuf,
    //
    int rcount;
    MPI_Status status;
+   int baseDims[2] = {dstHeight, dstWidth}; // dims of baseArray
+   int subDims[2] = {expectedHeight, expectedWidth}; // dims of subArray
+   int subOffset[2] = {dstOffsetRow, dstOffsetColumn}; 
 
-   MPI_Recv(dstBuf, expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
+   MPI_Datatype re_subarray;  // create the mysubarray object and initialize it
+   MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &re_subarray);
+   MPI_Type_commit(&re_subarray);
 
-   MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_INTs we recv'd
+   MPI_Recv(dstBuf, expectedHeight*expectedWidth, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
+
+   MPI_Get_count(&status, re_subarray, &rcount); // check how many MPI_FLOATs we recv'd
 }
 
 //
 // code from HW5 that performs sobel filtering, no OpenMP parallelism 
 //
+
 float
 sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, float *gy)
 {
