@@ -440,10 +440,10 @@ recvStridedBuffer(float *dstBuf,
    MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &re_subarray);
    MPI_Type_commit(&re_subarray);
 
-   MPI_Recv(&dbuff[0], expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
-   	
+   MPI_Recv(&dbuff[0], expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);	
    MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_FLOATs we recv'd
 
+   //copy data back
    for (int row = 0; row < expectedHeight; row++, d_offset += dstWidth){
       for (int j = 0, k = 0; j < expectedWidth; j++, k++){
          dstBuf[d_offset+j] = dbuff[k];
