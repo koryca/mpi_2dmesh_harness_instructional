@@ -424,12 +424,13 @@ recvStridedBuffer(float *dstBuf,
    int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
    int rcount;
    int d_offset[2] = {dstOffsetRow, dstOffsetColumn};
+   MPI_Datatype receive;
 
-   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &stat);
-   MPI_Type_commit(&stat);
+   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &receive);
+   MPI_Type_commit(&receive);
 	
-	MPI_Recv(dstBuf, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
-   MPI_Get_count(&stat, MPI_FLOAT, &rcount); // check how many MPI_INTs we recv'd
+	MPI_Recv(dstBuf, expectedHeight * expectedWidth, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+   MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
 
    // MPI_Type_free(&receive);
 
