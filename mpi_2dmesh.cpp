@@ -389,13 +389,21 @@ sendStridedBuffer(float *srcBuf,
    int baseDims[2] = {srcHeight, srcWidth}; // dims of baseArray
    int subDims[2] = {sendHeight, sendWidth}; // dims of subArray
    int subOffset[2] = {srcOffsetRow, srcOffsetColumn}; // subarray will be offset srcOffsetRow row, srcOffsetColumn column in baseArray
-   
+   int s_offset = srcOffsetRow*srcWidth+srcOffsetColumn;
+   float sbuff[sendWidth*sendHeight];
+
    MPI_Datatype send_subarray;  // create the mysubarray object and initialize it
    MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
    MPI_Type_commit(&send_subarray);
 
+   //get data before sending
+    for (int i = 0; i < sendHeight; i++, s_offset += srcWidth){
+      for (int j = 0, k = 0; j < sendWidth; j++, k++){
+         sbuff[k] = srcBuf[s_offset+j];
+      }
+   }
   
-   MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
+   MPI_Send(sbuff, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
    MPI_Type_free(&send_subarray);
       
@@ -425,14 +433,22 @@ recvStridedBuffer(float *dstBuf,
    int baseDims[2] = {dstHeight, dstWidth}; // dims of baseArray
    int subDims[2] = {expectedHeight, expectedWidth}; // dims of subArray
    int subOffset[2] = {dstOffsetRow, dstOffsetColumn}; 
+   int d_offset = dstOffsetRow*dstWidth+dstOffsetColumn;
+   float dbuff[expectedWidth*expectedHeight];
 
    MPI_Datatype re_subarray;  // create the subarray to receive data
    MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &re_subarray);
    MPI_Type_commit(&re_subarray);
 
-   MPI_Recv(dstBuf, expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
+   MPI_Recv(&dbuff[0], expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
    	
    MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_FLOATs we recv'd
+
+   for (int row = 0; row < expectedHeight; row++, d_offset += dstWidth){
+      for (int j = 0, k = 0; j < expectedWidth; j++, k++){
+         dstBuf[d_offset+j] = dbuff[k];
+      }
+   }
 }
 
 //
