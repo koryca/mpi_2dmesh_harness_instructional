@@ -386,14 +386,17 @@ sendStridedBuffer(float *srcBuf,
    // sendWidth by sendHeight values, and the subregion is offset from the origin of
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
-   MPI_Datatype send;
-
-   MPI_Type_vector(sendHeight, sendWidth, srcWidth, MPI_FLOAT, &send);
-   MPI_Type_commit(&send);
-
+   int baseDims[2] = {srcWidth, srcHeight}; // dims of baseArray
+   int subDims[2] = {sendWidth, sendHeight}; // dims of subArray
+   int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
+   int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
    int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
 
-   MPI_Send(srcBuf + srcOffset, 1, send, toRank, msgTag, MPI_COMM_WORLD);// send the subarray
+   MPI_Datatype send;
+   MPI_Type_create_subarray(ndims, baseDims, subDims, srcOffset, MPI_ORDER_C, MPI_FLOAT, &send);
+   MPI_Type_commit(&send);
+
+   MPI_Send(srcBuf, 1, send, toRank, msgTag, MPI_COMM_WORLD); // send the subarray   
    MPI_Type_free(&send);
       
 }
@@ -406,9 +409,8 @@ recvStridedBuffer(float *dstBuf,
       int fromRank, int toRank ) {
 
    int msgTag = 0;
-   int recvSize[2];
+   
    MPI_Status stat;
-   int rcount;
    
    //
    // ADD YOUR CODE HERE
@@ -417,17 +419,19 @@ recvStridedBuffer(float *dstBuf,
    // values. This incoming data is to be placed into the subregion of dstBuf that has an origin
    // at dstOffsetColumn, dstOffsetRow, and that is expectedWidth, expectedHeight in size.
    //
-   
-   MPI_Datatype receive;
-	MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &receive);
-	MPI_Type_commit(&receive);
-	
-	int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+   int recvSize[2] = {dstWidth, dstHeight}; // dims of baseArray
+   int expectedSize[2] = {expectedWidth, expectedHeight}; // dims of subArray
+   int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
+   int rcount;
+   int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+
+   MPI_Type_create_subarray(ndims, recvSize, expectedSize, dstOffset, MPI_ORDER_C, MPI_FLOAT, &stat);
+   MPI_Type_commit(&stat);
 	
 	MPI_Recv(dstBuf, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
    MPI_Get_count(&stat, MPI_FLOAT, &rcount); // check how many MPI_INTs we recv'd
 
-   MPI_Type_free(&receive);
+   // MPI_Type_free(&receive);
 
 }
 
