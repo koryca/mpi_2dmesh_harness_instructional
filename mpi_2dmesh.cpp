@@ -386,7 +386,16 @@ sendStridedBuffer(float *srcBuf,
    // sendWidth by sendHeight values, and the subregion is offset from the origin of
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
+   MPI_Datatype send;
 
+   MPI_Type_vector(sendHeight, sendWidth, srcWidth, MPI_FLOAT, &send);
+   MPI_Type_commit(&send);
+
+   int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
+
+   MPI_Send(srcBuf + srcOffset, 1, send, toRank, msgTag, MPI_COMM_WORLD);// send the subarray
+   MPI_Type_free(&send);
+      
 }
 
 void
@@ -399,7 +408,8 @@ recvStridedBuffer(float *dstBuf,
    int msgTag = 0;
    int recvSize[2];
    MPI_Status stat;
-
+   int rcount;
+   
    //
    // ADD YOUR CODE HERE
    // That performs receiving of data using MPI_Recv(), coming "fromRank" and destined for
@@ -407,15 +417,65 @@ recvStridedBuffer(float *dstBuf,
    // values. This incoming data is to be placed into the subregion of dstBuf that has an origin
    // at dstOffsetColumn, dstOffsetRow, and that is expectedWidth, expectedHeight in size.
    //
+   
+   MPI_Datatype receive;
+	MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &receive);
+	MPI_Type_commit(&receive);
+	
+	int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+	
+	MPI_Recv(dstBuf, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+   MPI_Get_count(&stat, MPI_FLOAT, &rcount); // check how many MPI_INTs we recv'd
+
+   MPI_Type_free(&receive);
 
 }
 
+//
+// code from HW5 that performs sobel filtering, no OpenMP parallelism 
+//
+float
+sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, float *gy)
+{
+   float t=0.0;
 
-//
-// ADD YOUR CODE HERE
-// that performs sobel filtering
-// suggest using your cpu code from HW5, no OpenMP parallelism 
-//
+   float tmp_x=0.0;
+   float tmp_y=0.0;
+   //j: row i:col
+   // int s_offset_x = i*nrows + j;
+   int s_offset = (i-1)*ncols + (j-1);  
+   // printf("x offset is %d \n", s_offset_x);
+   for (int jj = 0; jj<3; jj++, s_offset += ncols){
+      for (int ii = 0; ii<3; ii++){
+         tmp_x += s[ii+s_offset] * gx[ii+jj*3];
+         tmp_y += s[ii+s_offset] * gy[ii+jj*3];
+      } 
+   }
+
+   t = sqrt(tmp_x*tmp_x+tmp_y*tmp_y);
+   // printf("t is: %f \n", t);
+
+   return t;
+}
+
+void
+do_sobel_filtering(float *in, float *out, int ncols, int nrows)
+{
+   float Gx[] = {1.0, 0.0, -1.0, 2.0, 0.0, -2.0, 1.0, 0.0, -1.0};
+   float Gy[] = {1.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, -2.0, -1.0};
+
+   for(int i = 0; i < nrows; i++){
+      for(int j = 0; j < ncols; j++){
+         if(i==0 || j==0 || i==(nrows-1) || j==(ncols-1)) out[i*ncols+j] = 0.0;
+         // if(i > 10 && j > 10) break;
+         out[i*ncols+j] = sobel_filtered_pixel(in, i, j, ncols, nrows, Gx, Gy);
+         // out[i*ncols+j] = in[i*ncols+j];
+         // printf("i is: %d \n", i);
+         // printf("j is: %d \n", j);
+         // printf("out is: %f \n", out[i+j]);
+      }
+   }
+}
 
 
 void
@@ -439,6 +499,7 @@ sobelAllTiles(int myrank, vector < vector < Tile2D > > & tileArray) {
 #endif
          // ADD YOUR CODE HERE
          // to call your sobel filtering code on each tile
+         do_sobel_filtering(t->inputBuffer.data(), t->outputBuffer.data(), t->height, t->width);
          }
       }
    }
