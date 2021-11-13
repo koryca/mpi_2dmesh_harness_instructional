@@ -439,7 +439,7 @@ recvStridedBuffer(float *dstBuf,
    MPI_Type_commit(&re_subarray);
 
    // int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
-   MPI_Recv(dstBuf, expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
+   MPI_Recv(dstBuf, 1, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
    
 	
 	// MPI_Recv(dstBuf + dstOffset, 1, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
