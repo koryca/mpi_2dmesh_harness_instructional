@@ -390,10 +390,10 @@ sendStridedBuffer(float *srcBuf,
    int subDims[2] = {sendWidth, sendHeight}; // dims of subArray
    int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
    int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
-   int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
+   int s_offset = srcOffsetRow * srcWidth + srcOffsetColumn;
 
    MPI_Datatype send;
-   MPI_Type_create_subarray(ndims, baseDims, subDims, srcOffset, MPI_ORDER_C, MPI_FLOAT, &send);
+   MPI_Type_create_subarray(ndims, baseDims, subDims, s_offset, MPI_ORDER_C, MPI_FLOAT, &send);
    MPI_Type_commit(&send);
 
    MPI_Send(srcBuf, 1, send, toRank, msgTag, MPI_COMM_WORLD); // send the subarray   
@@ -423,9 +423,9 @@ recvStridedBuffer(float *dstBuf,
    int expectedSize[2] = {expectedWidth, expectedHeight}; // dims of subArray
    int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
    int rcount;
-   int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+   int d_offset = dstOffsetRow * dstWidth + dstOffsetColumn;
 
-   MPI_Type_create_subarray(ndims, recvSize, expectedSize, dstOffset, MPI_ORDER_C, MPI_FLOAT, &stat);
+   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &stat);
    MPI_Type_commit(&stat);
 	
 	MPI_Recv(dstBuf, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
@@ -446,9 +446,9 @@ sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, f
    float tmp_x=0.0;
    float tmp_y=0.0;
    //j: row i:col
-   // int s_offset_x = i*nrows + j;
+   
    int s_offset = (i-1)*ncols + (j-1);  
-   // printf("x offset is %d \n", s_offset_x);
+   
    for (int jj = 0; jj<3; jj++, s_offset += ncols){
       for (int ii = 0; ii<3; ii++){
          tmp_x += s[ii+s_offset] * gx[ii+jj*3];
@@ -471,12 +471,7 @@ do_sobel_filtering(float *in, float *out, int ncols, int nrows)
    for(int i = 0; i < nrows; i++){
       for(int j = 0; j < ncols; j++){
          if(i==0 || j==0 || i==(nrows-1) || j==(ncols-1)) out[i*ncols+j] = 0.0;
-         // if(i > 10 && j > 10) break;
          out[i*ncols+j] = sobel_filtered_pixel(in, i, j, ncols, nrows, Gx, Gy);
-         // out[i*ncols+j] = in[i*ncols+j];
-         // printf("i is: %d \n", i);
-         // printf("j is: %d \n", j);
-         // printf("out is: %f \n", out[i+j]);
       }
    }
 }
