@@ -399,7 +399,7 @@ sendStridedBuffer(float *srcBuf,
 	
 	// MPI_Send(srcBuf + srcOffset, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD);
   
-   MPI_Send(srcBuf, sendWidth*sendHeight, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
+   MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
    // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
 
@@ -438,12 +438,13 @@ recvStridedBuffer(float *dstBuf,
    
    MPI_Type_commit(&re_subarray);
 
-   MPI_Recv(dstBuf, expectedHeight*expectedWidth, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
    // int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+   MPI_Recv(dstBuf, expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
+   
 	
 	// MPI_Recv(dstBuf + dstOffset, 1, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
 
-   MPI_Get_count(&status, re_subarray, &rcount); // check how many MPI_FLOATs we recv'd
+   MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_FLOATs we recv'd
 }
 
 //
@@ -455,8 +456,8 @@ sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, f
 {
    float t=0.0;
 
-   float tmp_x=0.0;
-   float tmp_y=0.0;
+   float tmp_x=0.0f;
+   float tmp_y=0.0f;
    //j: row i:col
    int s_offset = (i-1)*ncols + (j-1);  
    
