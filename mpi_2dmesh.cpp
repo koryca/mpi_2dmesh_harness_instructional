@@ -386,38 +386,20 @@ sendStridedBuffer(float *srcBuf,
    // sendWidth by sendHeight values, and the subregion is offset from the origin of
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
-   // int baseDims[2] = {srcWidth, srcHeight}; // dims of baseArray
-   // int subDims[2] = {sendWidth, sendHeight}; // dims of subArray
-   // // int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
-   // int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
-   // int s_offset[2] = {srcOffsetRow, srcOffsetColumn};
+   int baseDims[2] = {srcHeight, srcWidth}; // dims of baseArray: 3 rows, 4 columns 
+   int subDims[2] = {sendHeight, sendWidth}; // dims of subArray: 2 rows, 3 columns
+   int baseArray[baseDims[0]*baseDims[1]]; // baseArray can be a 1D int array
+   int subOffset[2] = {srcOffsetRow, srcOffsetColumn}; // subarray will be offset 1 row, 1 column in baseArray
+   
+      MPI_Datatype mysubarray;  // create the mysubarray object and initialize it
+      MPI_Type_create_subarray(1, baseDims, subDims, subOffset, MPI_FLOAT, &mysubarray);
+      MPI_Type_commit(&mysubarray);
 
-   // MPI_Datatype send;
-   // MPI_Type_create_subarray(ndims, baseDims, subDims, s_offset, MPI_ORDER_C, MPI_FLOAT, &send);
-   // MPI_Type_commit(&send);
+      MPI_Send(baseArray, 1, mysubarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
-   // MPI_Send(srcBuf, 1, send, toRank, msgTag, MPI_COMM_WORLD); // send the subarray   
-   // MPI_Type_free(&send);
-   // MPI_Datatype send;
-	// MPI_Type_vector(sendHeight, sendWidth, srcWidth, MPI_FLOAT, &send);
-	// MPI_Type_commit(&send);
-	
-	// int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
-	
-	// MPI_Send(srcBuf + srcOffset, 1, send, toRank, msgTag, MPI_COMM_WORLD);
-   // MPI_Type_free(&send);
-      MPI_Request request;
-      int srcPos = srcOffsetRow * srcWidth + srcOffsetColumn;
-      int count = sendWidth * sendHeight;
-      float *startPos = srcBuf + srcPos;
-      float *buffer = (float *)malloc(count * sizeof(float));
-      for (int j = 0; j < sendHeight; j++) {
-         int bPos = j * sendWidth;
-         int rPos = j * srcWidth;
-         memcpy((void *)(buffer + bPos), (void *)(startPos + rPos),sizeof(float) * sendWidth);
-      }
-      MPI_Isend(buffer, count, MPI_FLOAT, toRank, msgTag, MPI_COMM_WORLD, &request);
-      MPI_Request_free(&request);
+      // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
+
+      MPI_Type_free(&mysubarray);
       
 }
 
@@ -430,7 +412,8 @@ recvStridedBuffer(float *dstBuf,
 
    int msgTag = 0;
    
-   MPI_Status stat;
+   // MPI_Status stat;
+   // int recvSize[2];
    
    //
    // ADD YOUR CODE HERE
@@ -439,45 +422,12 @@ recvStridedBuffer(float *dstBuf,
    // values. This incoming data is to be placed into the subregion of dstBuf that has an origin
    // at dstOffsetColumn, dstOffsetRow, and that is expectedWidth, expectedHeight in size.
    //
-   // int recvSize[2] = {dstWidth, dstHeight}; // dims of baseArray
-   // int expectedSize[2] = {expectedWidth, expectedHeight}; // dims of subArray
-   // int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
-   // int rcount;
-   // int d_offset[2] = {dstOffsetRow, dstOffsetColumn};
-   // int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
-   // MPI_Datatype receive;
+   int rcount;
+   MPI_Status status;
 
-   // int rbuf[expectedWidth*expectedHeight];
-   // int rcount;
-   // MPI_Datatype receive;
-	// MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &receive);
-	// MPI_Type_commit(&receive);
-	
-	// int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
-	
-	// MPI_Recv(dstBuf + dstOffset, 1, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+   MPI_Recv(dstBuf, expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
 
-   // MPI_Recv(dstBuf + dstOffset, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
-   // MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
-
-   // MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &receive);
-   // MPI_Type_commit(&receive);
-	
-	// MPI_Recv(dstBuf, expectedHeight * expectedWidth, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
-   // MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
-
-   // MPI_Type_free(&receive);
-      MPI_Status status[4];
-      MPI_Request request[4];
-
-      int ecount = expectedHeight * expectedWidth;
-      float *buffer = (float *)malloc(ecount * sizeof(float));
-      MPI_Recv(buffer, ecount, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status[0]);
-      int s_off = 0;
-      int d_off = dstOffsetRow  * dstWidth + dstOffsetColumn;
-      for (int j = 0; j < expectedHeight; j++, s_off += expectedWidth, d_off += dstWidth) {
-         memcpy((void *)(dstBuf + d_off), (void *)(buffer + s_off),sizeof(float) * expectedWidth);
-      }
+   MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_INTs we recv'd
 }
 
 //
@@ -543,7 +493,7 @@ sobelAllTiles(int myrank, vector < vector < Tile2D > > & tileArray) {
 #endif
          // ADD YOUR CODE HERE
          // to call your sobel filtering code on each tile
-         do_sobel_filtering(t->inputBuffer.data(), t->outputBuffer.data(), t->height, t->width);
+         do_sobel_filtering(t->inputBuffer.data(), t->outputBuffer.data(), t->width, t->height,);
          }
       }
    }
