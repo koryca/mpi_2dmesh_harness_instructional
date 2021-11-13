@@ -388,7 +388,7 @@ sendStridedBuffer(float *srcBuf,
    //
    int baseDims[2] = {srcWidth, srcHeight}; // dims of baseArray
    int subDims[2] = {sendWidth, sendHeight}; // dims of subArray
-   int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
+   // int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
    int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
    int s_offset[2] = {srcOffsetRow, srcOffsetColumn};
 
@@ -419,18 +419,25 @@ recvStridedBuffer(float *dstBuf,
    // values. This incoming data is to be placed into the subregion of dstBuf that has an origin
    // at dstOffsetColumn, dstOffsetRow, and that is expectedWidth, expectedHeight in size.
    //
-   int recvSize[2] = {dstWidth, dstHeight}; // dims of baseArray
-   int expectedSize[2] = {expectedWidth, expectedHeight}; // dims of subArray
-   int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
-   int rcount;
-   int d_offset[2] = {dstOffsetRow, dstOffsetColumn};
-   MPI_Datatype receive;
+   // int recvSize[2] = {dstWidth, dstHeight}; // dims of baseArray
+   // int expectedSize[2] = {expectedWidth, expectedHeight}; // dims of subArray
+   // int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
+   // int rcount;
+   // int d_offset[2] = {dstOffsetRow, dstOffsetColumn};
+   int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+   // MPI_Datatype receive;
 
-   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &receive);
-   MPI_Type_commit(&receive);
+   // int rbuf[expectedWidth*expectedHeight];
+   int rcount;
+
+   MPI_Recv(dstBuf + dstOffset, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+   MPI_Get_count(&stat, MPI_FLOAT, &rcount); // check how many MPI_INTs we recv'd
+
+   // MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &receive);
+   // MPI_Type_commit(&receive);
 	
-	MPI_Recv(dstBuf, expectedHeight * expectedWidth, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
-   MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
+	// MPI_Recv(dstBuf, expectedHeight * expectedWidth, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+   // MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
 
    // MPI_Type_free(&receive);
 
