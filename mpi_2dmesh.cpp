@@ -392,16 +392,10 @@ sendStridedBuffer(float *srcBuf,
    
    MPI_Datatype send_subarray;  // create the mysubarray object and initialize it
    MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
-   // MPI_Type_vector(sendHeight, sendWidth, srcWidth, MPI_FLOAT, &send_subarray);
    MPI_Type_commit(&send_subarray);
 
-   // int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
-	
-	// MPI_Send(srcBuf + srcOffset, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD);
   
    MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
-
-   // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
 
    MPI_Type_free(&send_subarray);
       
@@ -434,16 +428,10 @@ recvStridedBuffer(float *dstBuf,
 
    MPI_Datatype re_subarray;  // create the subarray to receive data
    MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &re_subarray);
-   // MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &re_subarray);
-   
    MPI_Type_commit(&re_subarray);
 
-   // int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
-   MPI_Recv(dstBuf, 1, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
-   
-	
-	// MPI_Recv(dstBuf + dstOffset, 1, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
-
+   MPI_Recv(dstBuf, expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);
+   	
    MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_FLOATs we recv'd
 }
 
