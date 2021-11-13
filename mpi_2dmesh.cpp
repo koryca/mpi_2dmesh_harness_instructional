@@ -390,15 +390,16 @@ sendStridedBuffer(float *srcBuf,
    int subDims[2] = {sendHeight, sendWidth}; // dims of subArray
    int subOffset[2] = {srcOffsetRow, srcOffsetColumn}; // subarray will be offset srcOffsetRow row, srcOffsetColumn column in baseArray
    
-      MPI_Datatype send_subarray;  // create the mysubarray object and initialize it
-      MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
-      MPI_Type_commit(&send_subarray);
+   MPI_Datatype send_subarray;  // create the mysubarray object and initialize it
+   MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
+   MPI_Type_commit(&send_subarray);
 
-      MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
+   //MPI_Send(buffer, length, newDataTypeVar, destRank, tag, comm)
+   MPI_Send(srcBuf, sendHeight*sendWidth, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
-      // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
+   // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
 
-      MPI_Type_free(&send_subarray);
+   MPI_Type_free(&send_subarray);
       
 }
 
@@ -448,7 +449,6 @@ sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, f
    float tmp_x=0.0;
    float tmp_y=0.0;
    //j: row i:col
-   
    int s_offset = (i-1)*ncols + (j-1);  
    
    for (int jj = 0; jj<3; jj++, s_offset += ncols){
@@ -459,7 +459,6 @@ sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, f
    }
 
    t = sqrt(tmp_x*tmp_x+tmp_y*tmp_y);
-   // printf("t is: %f \n", t);
 
    return t;
 }
@@ -651,7 +650,7 @@ int main(int ac, char *av[]) {
    char hostname[256];
    gethostname(hostname, sizeof(hostname));
 
-   printf("Hello world, I'm rank %d of %d total ranks running on <%s>\n", as.myrank, as.nranks, hostname);
+   // printf("Hello world, I'm rank %d of %d total ranks running on <%s>\n", as.myrank, as.nranks, hostname);
    MPI_Barrier(MPI_COMM_WORLD);
 
 #if DEBUG_TRACE
