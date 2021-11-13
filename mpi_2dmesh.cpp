@@ -398,8 +398,8 @@ sendStridedBuffer(float *srcBuf,
    // int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
 	
 	// MPI_Send(srcBuf + srcOffset, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD);
-   //MPI_Send(buffer, length, newDataTypeVar, destRank, tag, comm)
-   MPI_Send(srcBuf, sendWidth * sendHeight, MPI_FLOAT, toRank, msgTag, MPI_COMM_WORLD, &send_subarray); // send the subarray
+  
+   MPI_Send(srcBuf, sendWidth*sendHeight, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
    // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
 
@@ -432,7 +432,7 @@ recvStridedBuffer(float *dstBuf,
    int subDims[2] = {expectedHeight, expectedWidth}; // dims of subArray
    int subOffset[2] = {dstOffsetRow, dstOffsetColumn}; 
 
-   MPI_Datatype re_subarray;  // create the mysubarray object and initialize it
+   MPI_Datatype re_subarray;  // create the subarray to receive data
    MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &re_subarray);
    // MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &re_subarray);
    
