@@ -395,7 +395,7 @@ sendStridedBuffer(float *srcBuf,
    MPI_Type_commit(&send_subarray);
 
    //MPI_Send(buffer, length, newDataTypeVar, destRank, tag, comm)
-   MPI_Send(srcBuf, sendHeight*sendWidth, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
+   MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
    // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
 
@@ -432,7 +432,7 @@ recvStridedBuffer(float *dstBuf,
    MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &re_subarray);
    MPI_Type_commit(&re_subarray);
 
-   MPI_Recv(dstBuf, expectedHeight*expectedWidth, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
+   MPI_Recv(dstBuf, 1, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
 
    MPI_Get_count(&status, re_subarray, &rcount); // check how many MPI_FLOATs we recv'd
 }
