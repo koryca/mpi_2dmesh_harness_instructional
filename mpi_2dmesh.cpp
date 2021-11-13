@@ -398,14 +398,26 @@ sendStridedBuffer(float *srcBuf,
 
    // MPI_Send(srcBuf, 1, send, toRank, msgTag, MPI_COMM_WORLD); // send the subarray   
    // MPI_Type_free(&send);
-   MPI_Datatype send;
-	MPI_Type_vector(sendHeight, sendWidth, srcWidth, MPI_FLOAT, &send);
-	MPI_Type_commit(&send);
+   // MPI_Datatype send;
+	// MPI_Type_vector(sendHeight, sendWidth, srcWidth, MPI_FLOAT, &send);
+	// MPI_Type_commit(&send);
 	
-	int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
+	// int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
 	
-	MPI_Send(srcBuf + srcOffset, 1, send, toRank, msgTag, MPI_COMM_WORLD);
-   MPI_Type_free(&send);
+	// MPI_Send(srcBuf + srcOffset, 1, send, toRank, msgTag, MPI_COMM_WORLD);
+   // MPI_Type_free(&send);
+      MPI_Request request;
+      int srcPos = srcOffsetRow * srcWidth + srcOffsetColumn;
+      int count = sendWidth * sendHeight;
+      float *startPos = srcBuf + srcPos;
+      float *buffer = (float *)malloc(count * sizeof(float));
+      for (int j = 0; j < sendHeight; j++) {
+         int bPos = j * sendWidth;
+         int rPos = j * srcWidth;
+         memcpy((void *)(buffer + bPos), (void *)(startPos + rPos),sizeof(float) * sendWidth);
+      }
+      MPI_Isend(buffer, count, MPI_FLOAT, toRank, msgTag, MPI_COMM_WORLD, &request);
+      MPI_Request_free(&request);
       
 }
 
@@ -436,17 +448,17 @@ recvStridedBuffer(float *dstBuf,
    // MPI_Datatype receive;
 
    // int rbuf[expectedWidth*expectedHeight];
-   int rcount;
-   MPI_Datatype receive;
-	MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &receive);
-	MPI_Type_commit(&receive);
+   // int rcount;
+   // MPI_Datatype receive;
+	// MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &receive);
+	// MPI_Type_commit(&receive);
 	
-	int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+	// int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
 	
-	MPI_Recv(dstBuf + dstOffset, 1, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+	// MPI_Recv(dstBuf + dstOffset, 1, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
 
    // MPI_Recv(dstBuf + dstOffset, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
-   MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
+   // MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
 
    // MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &receive);
    // MPI_Type_commit(&receive);
@@ -454,8 +466,18 @@ recvStridedBuffer(float *dstBuf,
 	// MPI_Recv(dstBuf, expectedHeight * expectedWidth, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
    // MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
 
-   MPI_Type_free(&receive);
+   // MPI_Type_free(&receive);
+      MPI_Status status[4];
+      MPI_Request request[4];
 
+      int ecount = expectedHeight * expectedWidth;
+      float *buffer = (float *)malloc(ecount * sizeof(float));
+      MPI_Recv(buffer, ecount, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status[0]);
+      int s_off = 0;
+      int d_off = dstOffsetRow  * dstWidth + dstOffsetColumn;
+      for (int j = 0; j < expectedHeight; j++, s_off += expectedWidth, d_off += dstWidth) {
+         memcpy((void *)(dstBuf + d_off), (void *)(buffer + s_off),sizeof(float) * expectedWidth);
+      }
 }
 
 //
