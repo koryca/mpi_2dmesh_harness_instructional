@@ -454,7 +454,7 @@ recvStridedBuffer(float *dstBuf,
 	// MPI_Recv(dstBuf, expectedHeight * expectedWidth, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
    // MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
 
-   // MPI_Type_free(&receive);
+   MPI_Type_free(&receive);
 
 }
 
