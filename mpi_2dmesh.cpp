@@ -388,12 +388,12 @@ sendStridedBuffer(float *srcBuf,
    //
    int baseDims[] = {srcHeight*srcWidth}; // dims of baseArray
    int subDims[] = {sendHeight*sendWidth}; // dims of subArray
-   // int subOffset[2] = {srcOffsetRow, srcOffsetColumn}; // subarray will be offset srcOffsetRow row, srcOffsetColumn column in baseArray
+   int subOffset[] = {1}; // subarray will be offset srcOffsetRow row, srcOffsetColumn column in baseArray
    int s_offset = srcOffsetRow*srcWidth+srcOffsetColumn;
    float sbuff[sendWidth*sendHeight];
 
    MPI_Datatype send_subarray;  // create the mysubarray object and initialize it
-   MPI_Type_create_subarray(1, baseDims, subDims, 1, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
+   MPI_Type_create_subarray(1, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
    MPI_Type_commit(&send_subarray);
 
    //get data before sending
@@ -433,11 +433,12 @@ recvStridedBuffer(float *dstBuf,
    int baseDims[] = {dstHeight*dstWidth}; // dims of baseArray
    int subDims[] = {expectedHeight*expectedWidth}; // dims of subArray
    // int subOffset[] = {dstOffsetRow*dstOffsetColumn}; 
+   int subOffset[] = {1}; 
    int d_offset = dstOffsetRow*dstWidth+dstOffsetColumn;
    float dbuff[expectedWidth*expectedHeight];
 
    MPI_Datatype recv_subarray;  // create the subarray to receive data
-   MPI_Type_create_subarray(1, baseDims, subDims, 1, MPI_ORDER_C, MPI_FLOAT, &recv_subarray);
+   MPI_Type_create_subarray(1, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &recv_subarray);
    MPI_Type_commit(&recv_subarray);
 
    MPI_Recv(&dbuff[0], expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);	
