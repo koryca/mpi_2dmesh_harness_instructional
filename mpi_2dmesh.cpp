@@ -425,7 +425,7 @@ recvStridedBuffer(float *dstBuf,
    int rcount;
    int d_offset = dstOffsetRow * dstWidth + dstOffsetColumn;
 
-   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &stat);
+   MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_INT, &stat);
    MPI_Type_commit(&stat);
 	
 	MPI_Recv(dstBuf, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
