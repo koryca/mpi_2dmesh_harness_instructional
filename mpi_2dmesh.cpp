@@ -441,7 +441,7 @@ recvStridedBuffer(float *dstBuf,
    // MPI_Recv(dstBuf, 1, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
    int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
 	
-	MPI_Recv(dstBuf + dstOffset, 1, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+	MPI_Recv(dstBuf + dstOffset, 1, re_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
 
    MPI_Get_count(&status, re_subarray, &rcount); // check how many MPI_FLOATs we recv'd
 }
