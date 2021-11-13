@@ -386,18 +386,25 @@ sendStridedBuffer(float *srcBuf,
    // sendWidth by sendHeight values, and the subregion is offset from the origin of
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
-   int baseDims[2] = {srcWidth, srcHeight}; // dims of baseArray
-   int subDims[2] = {sendWidth, sendHeight}; // dims of subArray
-   // int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
-   int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
-   int s_offset[2] = {srcOffsetRow, srcOffsetColumn};
+   // int baseDims[2] = {srcWidth, srcHeight}; // dims of baseArray
+   // int subDims[2] = {sendWidth, sendHeight}; // dims of subArray
+   // // int baseArray[srcWidth*srcHeight]; // baseArray can be a 1D int array
+   // int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
+   // int s_offset[2] = {srcOffsetRow, srcOffsetColumn};
 
+   // MPI_Datatype send;
+   // MPI_Type_create_subarray(ndims, baseDims, subDims, s_offset, MPI_ORDER_C, MPI_FLOAT, &send);
+   // MPI_Type_commit(&send);
+
+   // MPI_Send(srcBuf, 1, send, toRank, msgTag, MPI_COMM_WORLD); // send the subarray   
+   // MPI_Type_free(&send);
    MPI_Datatype send;
-   MPI_Type_create_subarray(ndims, baseDims, subDims, s_offset, MPI_ORDER_C, MPI_FLOAT, &send);
-   MPI_Type_commit(&send);
-
-   MPI_Send(srcBuf, 1, send, toRank, msgTag, MPI_COMM_WORLD); // send the subarray   
-   MPI_Type_free(&send);
+	MPI_Type_vector(sendHeight, sendWidth, srcWidth, MPI_FLOAT, &send);
+	MPI_Type_commit(&send);
+	
+	int srcOffset = srcOffsetRow * srcWidth + srcOffsetColumn;
+	
+	MPI_Send(srcBuf + srcOffset, 1, send, toRank, msgTag, MPI_COMM_WORLD);
       
 }
 
@@ -424,14 +431,21 @@ recvStridedBuffer(float *dstBuf,
    // int ndims=2;  // telling MPI we are doing a 2d subArray of a 2d baseArray
    // int rcount;
    // int d_offset[2] = {dstOffsetRow, dstOffsetColumn};
-   int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+   // int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
    // MPI_Datatype receive;
 
    // int rbuf[expectedWidth*expectedHeight];
    int rcount;
+   MPI_Datatype receive;
+	MPI_Type_vector(expectedHeight, expectedWidth, dstWidth, MPI_FLOAT, &receive);
+	MPI_Type_commit(&receive);
+	
+	int dstOffset = dstOffsetRow * dstWidth + dstOffsetColumn;
+	
+	MPI_Recv(dstBuf + dstOffset, 1, receive, fromRank, msgTag, MPI_COMM_WORLD, &stat);
 
-   MPI_Recv(dstBuf + dstOffset, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
-   MPI_Get_count(&stat, MPI_FLOAT, &rcount); // check how many MPI_INTs we recv'd
+   // MPI_Recv(dstBuf + dstOffset, expectedHeight * expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &stat);
+   MPI_Get_count(&stat, receive, &rcount); // check how many MPI_INTs we recv'd
 
    // MPI_Type_create_subarray(ndims, recvSize, expectedSize, d_offset, MPI_ORDER_C, MPI_FLOAT, &receive);
    // MPI_Type_commit(&receive);
