@@ -448,7 +448,7 @@ sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, f
    float tmp_x=0.0;
    float tmp_y=0.0;
    //j: row i:col
-   int s_offset = (i-1)*ncols + (j-1);  
+   int s_offset = (i-1) + (j-1)*ncols;  
    
    for (int jj = 0; jj<3; jj++, s_offset += ncols){
       for (int ii = 0; ii<3; ii++){
@@ -498,7 +498,7 @@ sobelAllTiles(int myrank, vector < vector < Tile2D > > & tileArray) {
 #endif
          // ADD YOUR CODE HERE
          // to call your sobel filtering code on each tile
-         do_sobel_filtering(t->inputBuffer.data(), t->outputBuffer.data(), t->height, t->width);
+         do_sobel_filtering(t->inputBuffer.data(), t->outputBuffer.data(), t->width, t->height);
          }
       }
    }
