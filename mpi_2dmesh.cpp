@@ -446,7 +446,7 @@ sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, f
    float tmp_x=0.0;
    float tmp_y=0.0;
    //j: row i:col
-   int s_offset = i*ncols + j;  
+   int s_offset = (i-1)*ncols + (j-1);  
    
    for (int jj = 0; jj<3; jj++, s_offset += ncols){
       for (int ii = 0; ii<3; ii++){
