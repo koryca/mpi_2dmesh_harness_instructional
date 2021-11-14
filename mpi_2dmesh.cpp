@@ -432,6 +432,7 @@ recvStridedBuffer(float *dstBuf,
    MPI_Recv(dstBuf, 1, recv_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
 
    MPI_Get_count(&status, recv_subarray, &rcount); // check how many MPI_FLOATs we recv'd
+   fprintf(stderr, "received %d items:  \n", rcount);
 }
 
 //
