@@ -386,17 +386,24 @@ sendStridedBuffer(float *srcBuf,
    // sendWidth by sendHeight values, and the subregion is offset from the origin of
    // srcBuf by the values specificed by srcOffsetColumn, srcOffsetRow.
    //
-   int baseDims[2] = {srcHeight, srcWidth}; // dims of baseArray
-   int subDims[2] = {sendHeight, sendWidth}; // dims of subArray
-   int subOffset[2] = {srcOffsetRow, srcOffsetColumn}; // subarray will be offset srcOffsetRow row, srcOffsetColumn column in baseArray
-   
-   MPI_Datatype send_subarray;  // create the mysubarray object and initialize it
-   MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
+   int baseDims[] = {srcHeight*srcWidth}; // dims of baseArray
+   int subDims[] = {sendHeight*sendWidth}; // dims of subArray
+   int subOffset[] = {1}; // subarray start position
+   int s_offset = srcOffsetRow*srcWidth+srcOffsetColumn;
+   float sbuff[sendWidth*sendHeight];
+
+   MPI_Datatype send_subarray;  // create send_subarray
+   MPI_Type_create_subarray(1, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &send_subarray);
    MPI_Type_commit(&send_subarray);
 
-   MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
-
-   // printArray(baseArray, baseDims[0], baseDims[1], myrank, " sending baseArray ");
+   //get data before sending
+    for (int i = 0; i < sendHeight; i++, s_offset += srcWidth){
+      for (int j = 0, k = 0; j < sendWidth; j++, k++){
+         sbuff[k] = srcBuf[s_offset+j];
+      }
+   }
+   // send 1 subarray of size sendHeight*sendWidth with offset
+   MPI_Send(sbuff, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
 
    MPI_Type_free(&send_subarray);
       
@@ -423,17 +430,27 @@ recvStridedBuffer(float *dstBuf,
    //
    int rcount;
    MPI_Status status;
-   int baseDims[2] = {dstHeight, dstWidth}; // dims of baseArray
-   int subDims[2] = {expectedHeight, expectedWidth}; // dims of subArray
-   int subOffset[2] = {dstOffsetRow, dstOffsetColumn}; 
+   int baseDims[] = {dstHeight*dstWidth}; // dims of baseArray
+   int subDims[] = {expectedHeight*expectedWidth}; // dims of subArray
+   // int subOffset[] = {dstOffsetRow*dstOffsetColumn}; 
+   int subOffset[] = {1}; 
+   int d_offset = dstOffsetRow*dstWidth+dstOffsetColumn;
+   float dbuff[expectedWidth*expectedHeight];
 
-   MPI_Datatype recv_subarray;  // create the mysubarray 
-   MPI_Type_create_subarray(2, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &recv_subarray);
+   MPI_Datatype recv_subarray;  // create the subarray to receive data
+   MPI_Type_create_subarray(1, baseDims, subDims, subOffset, MPI_ORDER_C, MPI_FLOAT, &recv_subarray);
    MPI_Type_commit(&recv_subarray);
 
-   MPI_Recv(dstBuf, dstHeight*dstWidth, recv_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
+   // receive a chunk of data of size expectedHeight*expectedWidth 
+   MPI_Recv(&dbuff[0], expectedHeight*expectedWidth, MPI_FLOAT, fromRank, msgTag, MPI_COMM_WORLD, &status);	
+   MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_FLOATs we recv'd
 
-   MPI_Get_count(&status, recv_subarray, &rcount); // check how many MPI_FLOATs we recv'd
+   //copy data back
+   for (int i = 0; i < expectedHeight; i++, d_offset += dstWidth){
+      for (int j = 0, k = 0; j < expectedWidth; j++, k++){
+         dstBuf[d_offset+j] = dbuff[k];
+      }
+   }
 }
 
 //
@@ -445,8 +462,8 @@ sobel_filtered_pixel(float *s, int i, int j , int ncols, int nrows, float *gx, f
 {
    float t=0.0;
 
-   float tmp_x=0.0;
-   float tmp_y=0.0;
+   float tmp_x=0.0f;
+   float tmp_y=0.0f;
    //j: row i:col
    int s_offset = (i-1)*ncols + (j-1);  
    
