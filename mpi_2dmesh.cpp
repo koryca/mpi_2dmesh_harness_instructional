@@ -553,6 +553,7 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
                      t->xloc, t->yloc, // offset into the send buffer
                      t->width, t->height,  // size of the buffer to send,
                      myrank, t->tileRank);
+                     fprintf(stderr, "[rank %d] sent: scatter \n", myrank);
             }
             else // rather then have rank 0 send to rank 0, just do a strided copy into a tile's input buffer
             {
@@ -604,6 +605,7 @@ gatherAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *d, i
                0, 0, // offset into the send buffer
                t->width, t->height,  // size of the buffer to send,
                t->tileRank, 0);   // from rank, to rank
+               fprintf(stderr, "[rank %d] sent: gather \n", myrank);
          }
          else if (myrank == 0)
          {
