@@ -368,7 +368,7 @@ writeOutputFile(AppState &as)
    fclose(f);
 }
 
-
+int scount = 0;
 void
 sendStridedBuffer(float *srcBuf, 
       int srcWidth, int srcHeight, 
@@ -377,6 +377,8 @@ sendStridedBuffer(float *srcBuf,
       int fromRank, int toRank ) 
 {
    int msgTag = 0;
+   
+   MPI_Status status;
 
    //
    // ADD YOUR CODE HERE
@@ -395,6 +397,9 @@ sendStridedBuffer(float *srcBuf,
    MPI_Type_commit(&send_subarray);
 
    MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
+   // MPI_Get_count(&status, MPI_FLOAT, &scount); // check how many MPI_FLOATs we recv'd
+   scount++;
+   fprintf(stderr, "sent %d items:  \n", scount);
 
    MPI_Type_free(&send_subarray);
       
@@ -431,8 +436,8 @@ recvStridedBuffer(float *dstBuf,
 
    MPI_Recv(dstBuf, 1, recv_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
 
-   MPI_Get_count(&status, recv_subarray, &rcount); // check how many MPI_FLOATs we recv'd
-   // fprintf(stderr, "received %d items:  \n", rcount);
+   MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_FLOATs we recv'd
+   fprintf(stderr, "received %d items:  \n", rcount);
 }
 
 //
