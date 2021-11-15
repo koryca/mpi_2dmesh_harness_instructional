@@ -368,7 +368,7 @@ writeOutputFile(AppState &as)
    fclose(f);
 }
 
-int scount = 0;
+// int scount = 0;
 void
 sendStridedBuffer(float *srcBuf, 
       int srcWidth, int srcHeight, 
@@ -398,8 +398,8 @@ sendStridedBuffer(float *srcBuf,
 
    MPI_Send(srcBuf, 1, send_subarray, toRank, msgTag, MPI_COMM_WORLD); // send the subarray
    // MPI_Get_count(&status, send_subarray, &scount); // check how many MPI_FLOATs we recv'd
-   scount++;
-   fprintf(stderr, "sent %d items:  \n", scount);
+   // scount++;
+   // fprintf(stderr, "sent %d items:  \n", scount);
 
    MPI_Type_free(&send_subarray);
       
@@ -437,7 +437,7 @@ recvStridedBuffer(float *dstBuf,
    MPI_Recv(dstBuf, 1, recv_subarray, fromRank, msgTag, MPI_COMM_WORLD, &status);
 
    MPI_Get_count(&status, MPI_FLOAT, &rcount); // check how many MPI_FLOATs we recv'd
-   fprintf(stderr, "received %d items:  \n", rcount);
+   // fprintf(stderr, "received %d items:  \n", rcount);
 }
 
 //
@@ -553,7 +553,7 @@ scatterAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *s, 
                      t->xloc, t->yloc, // offset into the send buffer
                      t->width, t->height,  // size of the buffer to send,
                      myrank, t->tileRank);
-                     fprintf(stderr, "[rank %d] sent: scatter \n", myrank);
+                     // fprintf(stderr, "[rank %d] sent: scatter \n", myrank);
             }
             else // rather then have rank 0 send to rank 0, just do a strided copy into a tile's input buffer
             {
@@ -605,7 +605,7 @@ gatherAllTiles(int myrank, vector < vector < Tile2D > > & tileArray, float *d, i
                0, 0, // offset into the send buffer
                t->width, t->height,  // size of the buffer to send,
                t->tileRank, 0);   // from rank, to rank
-               fprintf(stderr, "[rank %d] sent: gather \n", myrank);
+               // fprintf(stderr, "[rank %d] sent: gather \n", myrank);
          }
          else if (myrank == 0)
          {
